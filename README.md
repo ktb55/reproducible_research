@@ -1,6 +1,7 @@
 # Course Project 1
 
 This repository contains both an R Markdown document and the knitted HTML doc.
+I have also included a knitted PDF output for easier viewing.
 
 They both aim to answer the following questions provided:
 
