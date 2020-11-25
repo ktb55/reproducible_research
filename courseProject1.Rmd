@@ -92,8 +92,62 @@ maxAvgSteps <- with(intervalData, round(average.steps[interval == maxInterval], 
 ```
 The interval **`r maxInterval`**, has the highest average steps (**`r maxAvgSteps`**).
 
+### Impute Missing Values
 
+Find number of missing values in the data set.
 
+```{r missing_values}
+sum(is.na(activityData))
+```
 
+Fill in missing values in data set using an average of the previous and next day 
+steps for that specific interval.
 
+```{r imputation}
+imputedData = activityData
 
+for (i in 1:dim(imputedData)[1]) {
+  if (is.na(imputedData$steps[i])){
+    before <- ifelse(imputedData$date[i] == "2012-10-01", NA, 
+                     imputedData$steps[imputedData$date == imputedData$date[i]-1 & 
+                                         imputedData$interval == imputedData$interval[i]])
+    after <- ifelse(imputedData$date[i] == "2012-11-30", NA, 
+                    imputedData$steps[imputedData$date == imputedData$date[i]+1 
+                                      & imputedData$interval == imputedData$interval[i]])
+    newSteps <- mean(c(before,after), na.rm = TRUE)
+    imputedData$steps[i] = newSteps
+  }
+}
+sum(is.na(imputedData))
+
+```
+This shows that all missing values have been imputed.  
+  
+Re-vist finding from original calculations when missing values were ignored.  
+  
+First create a new data frame with total steps per day.
+```{r imputed_total_steps}
+imputedSteps <- with(imputedData, data.frame(date = unique(date), 
+                                           total.steps = tapply(steps, date, 
+                                                                sum, na.rm = FALSE)))
+head(imputedSteps)
+```
+Histogram of the total steps per day.
+```{r imputed_hist}
+ig <- ggplot(imputedSteps, aes(total.steps))
+ig + geom_histogram(colour = "white") +
+  geom_vline(aes(xintercept=mean(total.steps)), colour="blue", lty="dashed", size=0.5) +
+  labs(title = "Histogram of Total Steps by Date",
+       x = "Total Steps",
+       y = "Count")
+```
+
+  
+Find the mean and median of total number of steps taken per day.
+```{r imputed_mean_median}
+imputedMean <- round(mean(imputedSteps$total.steps), digits = 2)
+imputedMedian <- round(median(imputedSteps$total.steps), digits = 2)
+```
+The mean is **`r imputedMean`** and the median is **`r imputedMedian`**.  These 
+are both larger than the original values by **`r imputedMean - stepsMean`** and 
+**`r imputedMedian - stepsMedian`**, respectively.
