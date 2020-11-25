@@ -1,0 +1,99 @@
+---
+title: "Reproducible Research Course Project 1"
+author: "Kalli Buchanan"
+date: "24/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+```
+
+### Loading and Preprocessing the Data
+
+Download data from provided url and load as dataframe.
+```{r loading, results='hide'}
+library(readr)
+
+if(!file.exists(".data")){dir.create("./data")}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(fileUrl, destfile = "./data/activity_monitoring.csv", method = "curl")
+activityData <- read_csv("data/activity_monitoring.csv")
+
+```
+
+Data is already processed, so no need to process further.
+```{r dataset_head}
+head(activityData)
+```
+
+Let's take a quick look at what the data is comprised of.
+```{r summary}
+summary(activityData)
+```
+
+### Mean total number of steps taken
+
+Calculate the total number of steps taken per day and create new data.frame to 
+hold this information
+```{r total_steps}
+stepsData <- with(activityData, data.frame(date = unique(date), 
+                                           total.steps = tapply(steps, date, 
+                                                                sum, na.rm = TRUE)))
+head(stepsData)
+```
+Histogram of the total amount of steps by each day.  
+```{r hist_steps}
+library(ggplot2)
+g <- ggplot(stepsData, aes(total.steps))
+g + geom_histogram(colour = "white") +
+  geom_vline(aes(xintercept=mean(total.steps)), colour="blue", lty="dashed", size=0.5) +
+  labs(title = "Histogram of Total Steps by Date",
+       x = "Total Steps",
+       y = "Count")
+```  
+
+  
+Find the mean and median of total number of steps taken per day.
+```{r mean_median}
+stepsMean <- round(mean(stepsData$total.steps), digits = 2)
+stepsMedian <- round(median(stepsData$total.steps), digits = 2)
+```
+The mean is **`r stepsMean`** and the median is **`r stepsMedian`**.
+
+### Average Daily Activity Pattern
+
+Make a new data.frame which holds unique intervals with the number of steps 
+averaged across all days.
+
+```{r intervals}
+intervalData <- with(activityData, data.frame(interval = unique(interval), 
+                                              average.steps = tapply(steps, interval, 
+                                                                     mean, na.rm = TRUE)))
+head(intervalData)
+```
+View these results using a time series plot.  Dashed vertical line shows the 
+interval with the highest average steps.
+
+```{r timeseries}
+ts <- ggplot(intervalData, aes(interval, average.steps))
+ts + geom_line() + 
+  geom_vline(aes(xintercept = interval[average.steps == max(average.steps)]), col = "blue", lty = "dashed") +
+  labs(title = "Daily Average Steps by Five Minute Interval",
+       x = "Five Minute Interval (spans one day)",
+       y = "Average Steps (averaged across all days)")
+```  
+  
+Find the interval with the highest average steps across all days.
+```{r max_interval}
+maxInterval <- with(intervalData, interval[average.steps == max(average.steps)])
+maxAvgSteps <- with(intervalData, round(average.steps[interval == maxInterval], digits = 2))
+```
+The interval **`r maxInterval`**, has the highest average steps (**`r maxAvgSteps`**).
+
+
+
+
+
+
