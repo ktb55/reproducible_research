@@ -150,4 +150,46 @@ imputedMedian <- round(median(imputedSteps$total.steps), digits = 2)
 ```
 The mean is **`r imputedMean`** and the median is **`r imputedMedian`**.  These 
 are both larger than the original values by **`r imputedMean - stepsMean`** and 
-**`r imputedMedian - stepsMedian`**, respectively.
+**`r imputedMedian - stepsMedian`**, respectively.  
+
+### Weekdays and Weekends Activity Patterns
+
+Add new factor variable to data set to indicate whether the date is during the 
+week or weekend.
+```{r add_factor}
+library(dplyr)
+weekendday <- c("Saturday", "Sunday")
+weekData <- imputedData %>%
+  mutate(date.type = ifelse(weekdays(date) %in% weekendday, "weekend", "weekday"), date.type = as.factor(date.type))
+summary(weekData)
+```
+Make two new data.frame which holds unique intervals with the number of steps 
+averaged across all days; one for weekdays, and one for weekends. Join these 
+tables based on interval.
+
+```{r intervals_weekday}
+library(tidyr)
+weekdayData <- with(weekData[weekData$date.type == "weekday",], data.frame(interval = unique(interval), 
+                                              average.steps.weekday = tapply(steps, interval, 
+                                                                     mean)))
+weekendData <- with(weekData[weekData$date.type == "weekend",], data.frame(interval = unique(interval), 
+                                              average.steps.weekend = tapply(steps, interval, 
+                                                                     mean)))
+weekInterval <- merge(weekdayData, weekendData) %>%
+  pivot_longer(!interval, names_to = "date.type", values_to = "average.steps", names_prefix = "average.steps.") %>%
+  mutate(date.type = as.factor(date.type))
+
+head(weekInterval)
+```
+
+View these results using a time series plot.
+
+```{r timeseries_weekday}
+wd <- ggplot(weekInterval, aes(interval, average.steps))
+wd + facet_grid(date.type~.) +
+  geom_line() + 
+  labs(title = "Daily Average Steps by Five Minute Interval",
+       x = "Five Minute Interval (spans one day)",
+       y = "Average Steps (averaged across all days)")
+
+```  
